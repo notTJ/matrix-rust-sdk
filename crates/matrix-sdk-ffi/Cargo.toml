@@ -12,10 +12,6 @@ repository = "https://github.com/matrix-org/matrix-rust-sdk"
 [lib]
 crate-type = ["cdylib", "staticlib"]
 
-
-[build-dependencies]
-uniffi_build = { version = "0.18.0", features = ["builtin-bindgen"] }
-
 [dependencies]
 anyhow = "1.0.51"
 extension-trait = "1.0.1"
@@ -31,5 +27,8 @@ thiserror = "1.0.30"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-stream = "0.1.8"
 tracing = "0.1.32"
-uniffi = "0.18.0"
-uniffi_macros = "0.18.0"
+uniffi = { git = "https://github.com/matrix-org/uniffi-rs", rev = "a85e5d30" }
+uniffi_macros = { git = "https://github.com/matrix-org/uniffi-rs", rev = "a85e5d30" }
+
+[build-dependencies]
+uniffi_build = { git = "https://github.com/matrix-org/uniffi-rs", rev = "a85e5d30", features = ["builtin-bindgen"] }

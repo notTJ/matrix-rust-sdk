@@ -7,10 +7,6 @@ namespace sdk {
 
     [Throws=ClientError]
     Client login_with_token(string base_path, string restore_token);
-
-    MediaSource media_source_from_url(string url);
-    MessageEventContent message_event_content_from_markdown(string md);
-    string gen_transaction_id();
 };
 
 [Error]
@@ -93,44 +89,6 @@ interface BackwardsStream {
 };
 
 interface MessageEventContent {};
-
-interface AnyMessage {
-    TextMessage? text_message();
-    ImageMessage? image_message();
-    NoticeMessage? notice_message();
-    EmoteMessage? emote_message();
-};
-
-interface BaseMessage {
-    string id();
-    string body();
-    string sender();
-    u64 origin_server_ts();
-    string? transaction_id();
-};
-
-interface TextMessage {
-    BaseMessage base_message();
-    string? html_body();
-};
-
-interface ImageMessage {
-    BaseMessage base_message();
-    MediaSource source();
-    u64? width();
-    u64? height();
-    string? blurhash();
-};
-
-interface NoticeMessage {
-    BaseMessage base_message();
-    string? html_body();
-};
-
-interface EmoteMessage {
-    BaseMessage base_message();
-    string? html_body();
-};
 
 interface MediaSource {
     string url();
