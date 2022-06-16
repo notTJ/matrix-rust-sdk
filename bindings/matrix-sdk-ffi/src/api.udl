@@ -21,6 +21,9 @@ interface ClientBuilder {
 
     [Self=ByArc]
     ClientBuilder username(string username);
+    
+    [Self=ByArc]
+    ClientBuilder server_name(string domain);
 
     [Self=ByArc]
     ClientBuilder homeserver_url(string url);
@@ -31,6 +34,11 @@ interface ClientBuilder {
 
 interface Client {
     void set_delegate(ClientDelegate? delegate);
+    
+    [Throws=ClientError]
+    boolean supports_password_login();
+    
+    string homeserver();
 
     [Throws=ClientError]
     void login(string username, string password);

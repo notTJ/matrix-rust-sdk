@@ -2,8 +2,9 @@ use std::{fs, path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use matrix_sdk::{
-    ruma::UserId, store::make_store_config, Client as MatrixClient,
-    ClientBuilder as MatrixClientBuilder,
+    ruma::{ServerName, UserId},
+    store::make_store_config,
+    Client as MatrixClient, ClientBuilder as MatrixClientBuilder,
 };
 use sanitize_filename_reader_friendly::sanitize;
 
@@ -13,6 +14,7 @@ use super::{client::Client, ClientState, RUNTIME};
 pub struct ClientBuilder {
     base_path: Option<String>,
     username: Option<String>,
+    server_name: Option<String>,
     homeserver_url: Option<String>,
     inner: MatrixClientBuilder,
 }
@@ -22,6 +24,7 @@ impl ClientBuilder {
         Self {
             base_path: None,
             username: None,
+            server_name: None,
             homeserver_url: None,
             inner: MatrixClient::builder().user_agent("rust-sdk-ios"),
         }
@@ -36,6 +39,12 @@ impl ClientBuilder {
     pub fn username(self: Arc<Self>, username: String) -> Arc<Self> {
         let mut builder = unwrap_or_clone_arc(self);
         builder.username = Some(username);
+        Arc::new(builder)
+    }
+
+    pub fn server_name(self: Arc<Self>, domain: String) -> Arc<Self> {
+        let mut builder = unwrap_or_clone_arc(self);
+        builder.server_name = Some(domain);
         Arc::new(builder)
     }
 
@@ -60,9 +69,12 @@ impl ClientBuilder {
 
         let mut inner_builder = builder.inner.store_config(store_config);
 
-        // Determine server either from explicitly set homeserver or from userId
+        // Determine server from explicitly set homeserver, server name or userId.
         if let Some(homeserver_url) = builder.homeserver_url {
             inner_builder = inner_builder.homeserver_url(homeserver_url);
+        } else if let Some(server_name) = builder.server_name {
+            let server_name = ServerName::parse(server_name)?;
+            inner_builder = inner_builder.server_name(&server_name);
         } else {
             let user = UserId::parse(username)?;
             inner_builder = inner_builder.server_name(user.server_name());
