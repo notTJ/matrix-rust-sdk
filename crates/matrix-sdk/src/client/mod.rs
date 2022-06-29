@@ -30,7 +30,7 @@ use futures_core::stream::Stream;
 use matrix_sdk_base::{
     deserialized_responses::SyncResponse,
     media::{MediaEventContent, MediaFormat, MediaRequest, MediaThumbnailSize},
-    BaseClient, Session, Store,
+    BaseClient, Session, StateStore,
 };
 use matrix_sdk_common::{
     instant::{Duration, Instant},
@@ -289,12 +289,12 @@ impl Client {
     /// Can be used with [`Client::restore_login`] to restore a previously
     /// logged-in session.
     pub fn session(&self) -> Option<&Session> {
-        self.store().session()
+        self.base_client().session()
     }
 
-    /// Get a reference to the store.
-    pub fn store(&self) -> &Store {
-        self.inner.base_client.store()
+    /// Get a reference to the state store.
+    pub fn store(&self) -> &dyn StateStore {
+        self.base_client().store()
     }
 
     /// Get the account of the current owner of the client.
@@ -533,7 +533,7 @@ impl Client {
     ///
     /// This will return the list of joined, invited, and left rooms.
     pub fn rooms(&self) -> Vec<room::Room> {
-        self.store()
+        self.base_client()
             .get_rooms()
             .into_iter()
             .map(|room| room::Common::new(self.clone(), room).into())
@@ -542,7 +542,7 @@ impl Client {
 
     /// Returns the joined rooms this client knows about.
     pub fn joined_rooms(&self) -> Vec<room::Joined> {
-        self.store()
+        self.base_client()
             .get_rooms()
             .into_iter()
             .filter_map(|room| room::Joined::new(self.clone(), room))
@@ -551,7 +551,7 @@ impl Client {
 
     /// Returns the invited rooms this client knows about.
     pub fn invited_rooms(&self) -> Vec<room::Invited> {
-        self.store()
+        self.base_client()
             .get_stripped_rooms()
             .into_iter()
             .filter_map(|room| room::Invited::new(self.clone(), room))
@@ -560,7 +560,7 @@ impl Client {
 
     /// Returns the left rooms this client knows about.
     pub fn left_rooms(&self) -> Vec<room::Left> {
-        self.store()
+        self.base_client()
             .get_rooms()
             .into_iter()
             .filter_map(|room| room::Left::new(self.clone(), room))
@@ -573,7 +573,9 @@ impl Client {
     ///
     /// `room_id` - The unique id of the room that should be fetched.
     pub fn get_room(&self, room_id: &RoomId) -> Option<room::Room> {
-        self.store().get_room(room_id).map(|room| room::Common::new(self.clone(), room).into())
+        self.base_client()
+            .get_room(room_id)
+            .map(|room| room::Common::new(self.clone(), room).into())
     }
 
     /// Get a joined room with the given room id.
@@ -582,7 +584,7 @@ impl Client {
     ///
     /// `room_id` - The unique id of the room that should be fetched.
     pub fn get_joined_room(&self, room_id: &RoomId) -> Option<room::Joined> {
-        self.store().get_room(room_id).and_then(|room| room::Joined::new(self.clone(), room))
+        self.base_client().get_room(room_id).and_then(|room| room::Joined::new(self.clone(), room))
     }
 
     /// Get an invited room with the given room id.
@@ -591,7 +593,7 @@ impl Client {
     ///
     /// `room_id` - The unique id of the room that should be fetched.
     pub fn get_invited_room(&self, room_id: &RoomId) -> Option<room::Invited> {
-        self.store().get_room(room_id).and_then(|room| room::Invited::new(self.clone(), room))
+        self.base_client().get_room(room_id).and_then(|room| room::Invited::new(self.clone(), room))
     }
 
     /// Get a left room with the given room id.
@@ -600,7 +602,7 @@ impl Client {
     ///
     /// `room_id` - The unique id of the room that should be fetched.
     pub fn get_left_room(&self, room_id: &RoomId) -> Option<room::Left> {
-        self.store().get_room(room_id).and_then(|room| room::Left::new(self.clone(), room))
+        self.base_client().get_room(room_id).and_then(|room| room::Left::new(self.clone(), room))
     }
 
     /// Resolve a room alias to a room id and a list of servers which know

@@ -65,6 +65,7 @@ use crate::{
     store::{
         ambiguity_map::AmbiguityCache, Result as StoreResult, StateChanges, Store, StoreConfig,
     },
+    StateStore,
 };
 
 /// A no IO Client implementation.
@@ -134,9 +135,19 @@ impl BaseClient {
         self.store.session()
     }
 
+    /// Get all the rooms this client knows about.
+    pub fn get_rooms(&self) -> Vec<Room> {
+        self.store.get_rooms()
+    }
+
+    /// Get all the rooms this client knows about.
+    pub fn get_stripped_rooms(&self) -> Vec<Room> {
+        self.store.get_stripped_rooms()
+    }
+
     /// Get a reference to the store.
-    pub fn store(&self) -> &Store {
-        &self.store
+    pub fn store(&self) -> &dyn StateStore {
+        &*self.store
     }
 
     /// Is the client logged in.
