@@ -1,0 +1,10 @@
+{
+    "name": "@matrix-org/matrix-sdk-crypto",
+    "version": "0.0.1",
+    "license": "Apache-2.0",
+    "scripts": {
+        "build": "",
+        "test": "",
+        "doc": ""
+    }
+}
