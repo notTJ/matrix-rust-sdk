@@ -1,0 +1,17 @@
+{
+    "fmt": {
+        "files": {
+            "include": [
+                "deno.json"
+            ]
+        },
+        "options": {
+            "indentWidth": 4
+        }
+    },
+    "lint": {
+        "rules": {
+            "tags": ["recommended"]
+        }
+    }
+}
