@@ -23,7 +23,7 @@ let source = null;
 async function generate() {
   let conf;
   try {
-    conf = JSON.parse(await Deno.readTextFile("bindings.json"));
+    conf = JSON.parse(await Deno.readTextFile("../../bindings.json"));
   } catch (_) {
     // Nothing to update.
     return;
@@ -44,21 +44,21 @@ async function generate() {
     },
   );
 
-  await Deno.remove("bindings.json");
+  await Deno.remove("../../bindings.json");
 }
 
 try {
-  await Deno.remove("bindings.json");
+  await Deno.remove("../../LICENSEbindings.json");
 } catch (e) {
   // no op
 }
 
-const status = await build().catch((_) => Deno.removeSync("bindings.json"));
+const status = await build().catch((_) => Deno.removeSync("../../bindings.json"));
 if (status?.success || typeof flags.release == "string") {
   await generate();
   if (source) {
-    await ensureDir("bindings");
-    await Deno.writeTextFile("bindings/bindings.ts", source);
+    await ensureDir("../../bindings/matrix-sdk-crypto-deno/bindings");
+    await Deno.writeTextFile("../../bindings/matrix-sdk-crypto-deno/bindings/bindings.ts", source);
   }
 }
 
