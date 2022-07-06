@@ -48,7 +48,7 @@ async function generate() {
 }
 
 try {
-  await Deno.remove("../../LICENSEbindings.json");
+  await Deno.remove("../../bindings.json");
 } catch (e) {
   // no op
 }
