@@ -16,10 +16,10 @@ use ruma::{
 pub struct EncodeUnchecked<'a>(&'a [u8]);
 
 impl<'a> EncodeUnchecked<'a> {
-    /// Wrap any `[u8]`
-    pub fn from(bytes: &'a [u8]) -> Self {
-        EncodeUnchecked(bytes)
-    }
+    // Wrap any `[u8]`
+    // pub fn from(bytes: &'a [u8]) -> Self {
+    //     EncodeUnchecked(bytes)
+    // }
 }
 
 impl<'a> EncodeKey for EncodeUnchecked<'a> {
