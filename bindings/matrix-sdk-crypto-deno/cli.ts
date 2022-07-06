@@ -12,11 +12,27 @@ const fetchPrefix = typeof flags.release == "string"
   : "../../target/" + (release ? "release" : "debug");
 
 async function build() {
-  const cmd = ["cargo", "build"];
+  let cmd = ["cargo", "clean"];
+
   if (release) cmd.push("--release");
   cmd.push(...flags["--"]);
+  Deno.run({ cmd });
+
+  // idk why a new array causes a red squiggly with Deno.run
+  cmd = ["cargo", "build"];
   const proc = Deno.run({ cmd });
   return proc.status();
+}
+
+// debugging
+async function printDir() {
+  try {
+    for await (const dirEntry of Deno.readDir('../')) {
+      console.log(dirEntry);
+    }
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 let source = null;
