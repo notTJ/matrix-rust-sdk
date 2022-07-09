@@ -6,12 +6,15 @@
             ]
         },
         "options": {
-            "indentWidth": 4
+            "indentWidth": 2
         }
     },
     "lint": {
         "rules": {
             "tags": ["recommended"]
         }
+    },
+    "tasks": {
+        "test-id": "deno test --unstable ./tests/identifiers_test.ts"
     }
 }
