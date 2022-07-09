@@ -4,6 +4,9 @@ verbose = false
 exclude-files = ["crates/matrix_sdk/examples/*"]
 workspace = true
 exclude = [
+    "crates",
+    "benchmarks",
+    "labs",
     "matrix-sdk-crypto-ffi",
     "matrix-sdk-crypto-js",
     "matrix-sdk-crypto-nodejs",
