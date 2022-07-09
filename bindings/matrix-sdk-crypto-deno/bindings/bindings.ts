@@ -27,6 +27,6 @@ const _lib = await prepare(opts, {})
  *
  * [user ID]: https://spec.matrix.org/v1.2/appendices/#user-identifiers
  */
-export type UserId = {
-  inner: OwnedUserId
+export type SimpleUserId = {
+  id: number
 }

@@ -20,7 +20,7 @@
 // mod errors;
 // pub mod events;
 pub mod identifiers;
-// mod errors;
+mod errors;
 // pub mod machine;
 // pub mod requests;
 // pub mod responses;
@@ -28,4 +28,4 @@ pub mod identifiers;
 // #[cfg(feature = "tracing")]
 // pub mod tracing;
 
-// use crate::errors::into_err;
+use crate::errors::into_err;
