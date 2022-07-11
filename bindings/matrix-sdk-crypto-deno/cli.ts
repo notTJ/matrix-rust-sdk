@@ -13,7 +13,7 @@ const fetchPrefix = typeof flags.release == "string"
 
 async function build() {
   let cmd = ["cargo", "clean"];
-  let proc = Deno.run({ cmd });
+  let proc; // = Deno.run({ cmd });
 
   cmd = ["cargo", "build"];
   if (release) cmd.push("--release");
@@ -23,23 +23,23 @@ async function build() {
   return proc.status();
 }
 
-async function listDir() {
+// async function listDir() {
 
   
-  console.log('listy');
-  try {
-    const dirResult = Deno.readDir("./");
-    console.log(dirResult);
-    for (const dirEntry of Deno.readDirSync("./")) {
-      console.log(dirEntry);
-      if (dirEntry.isDirectory) {
-        console.log("dir");
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
+//   console.log('listy');
+//   try {
+//     const dirResult = Deno.readDir("./");
+//     console.log(dirResult);
+//     for (const dirEntry of Deno.readDirSync("./")) {
+//       console.log(dirEntry);
+//       if (dirEntry.isDirectory) {
+//         console.log("dir");
+//       }
+//     }
+//   } catch (err) {
+//     console.error(err);
+//   }
+// }
 
 
 let source = null;

@@ -29,11 +29,6 @@ impl Error {
         let error = Error { message: String::from(reason) };
         return error;
     }
-
-    #[allow(clippy::inherent_to_string)]
-    fn to_string(&self) -> String {
-        format!("Error.to_string(): {}", self.message)
-    }
 }
 
 // impl From<Error> {
