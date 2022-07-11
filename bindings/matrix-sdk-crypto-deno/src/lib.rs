@@ -16,9 +16,9 @@
 // #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 //#![warn(missing_docs, missing_debug_implementations)]
 
-// pub mod encryption;
+pub mod encryption;
 // mod errors;
-// pub mod events;
+pub mod events;
 pub mod identifiers;
 mod errors;
 // pub mod machine;
