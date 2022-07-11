@@ -8,7 +8,7 @@ use ruma::events::room::history_visibility::HistoryVisibility as RumaHistoryVisi
 /// Who can see a room's history.
 // #[napi]
 #[deno_bindgen]
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum HistoryVisibility {
     /// Previous events are accessible to newly joined members from
     /// the point they were invited onwards.
