@@ -23,13 +23,51 @@ const opts = {
 }
 const _lib = await prepare(opts, {})
 /**
- * A Matrix [user ID].
- *
- * [user ID]: https://spec.matrix.org/v1.2/appendices/#user-identifiers
+ * The verification state of the device that sent an event to us.
  */
-export type SimpleUserId = {
-  id: number
-}
+export type VerificationState = /**
+   * The device is trusted.
+   */
+  | "Trusted"
+  | /**
+   * The device is not trusted.
+   */
+  "Untrusted"
+  | /**
+   * The device is not known to us.
+   */
+  "UnknownDevice"
+/**
+ * Represent the type of a request.
+ */
+export type RequestType = /**
+   * Represents a `KeysUploadRequest`.
+   */
+  | "KeysUpload"
+  | /**
+   * Represents a `KeysQueryRequest`.
+   */
+  "KeysQuery"
+  | /**
+   * Represents a `KeysClaimRequest`.
+   */
+  "KeysClaim"
+  | /**
+   * Represents a `ToDeviceRequest`.
+   */
+  "ToDevice"
+  | /**
+   * Represents a `SignatureUploadRequest`.
+   */
+  "SignatureUpload"
+  | /**
+   * Represents a `RoomMessageRequest`.
+   */
+  "RoomMessage"
+  | /**
+   * Represents a `KeysBackupRequest`.
+   */
+  "KeysBackup"
 /**
  * Who can see a room's history.
  */
@@ -62,3 +100,23 @@ export type HistoryVisibility = /**
    * of whether they have ever joined the room.
    */
   "WorldReadable"
+/**
+ * An encryption algorithm to be used to encrypt messages sent to a
+ * room.
+ */
+export type EncryptionAlgorithm = /**
+   * Olm version 1 using Curve25519, AES-256, and SHA-256.
+   */
+  | "OlmV1Curve25519AesSha2"
+  | /**
+   * Megolm version 1 using AES-256 and SHA-256.
+   */
+  "MegolmV1AesSha2"
+/**
+ * A Matrix [user ID].
+ *
+ * [user ID]: https://spec.matrix.org/v1.2/appendices/#user-identifiers
+ */
+export type SimpleUserId = {
+  id: number
+}

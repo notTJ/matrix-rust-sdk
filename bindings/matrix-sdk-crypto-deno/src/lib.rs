@@ -17,14 +17,13 @@
 //#![warn(missing_docs, missing_debug_implementations)]
 
 pub mod encryption;
-// mod errors;
+mod errors;
 pub mod events;
 pub mod identifiers;
-mod errors;
 // pub mod machine;
-// pub mod requests;
-// pub mod responses;
-// pub mod sync_events;
+pub mod requests;
+pub mod responses;
+pub mod sync_events;
 // #[cfg(feature = "tracing")]
 // pub mod tracing;
 

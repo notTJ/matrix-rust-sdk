@@ -251,15 +251,18 @@ request!(SignatureUploadRequest from RumaSignatureUploadRequest maps fields sign
 request!(RoomMessageRequest from RumaRoomMessageRequest maps fields room_id, txn_id, content);
 request!(KeysBackupRequest from RumaKeysBackupRequest maps fields rooms);
 
-pub type OutgoingRequests = Either7<
-    KeysUploadRequest,
-    KeysQueryRequest,
-    KeysClaimRequest,
-    ToDeviceRequest,
-    SignatureUploadRequest,
-    RoomMessageRequest,
-    KeysBackupRequest,
->;
+// napi type
+// pub type OutgoingRequests = Either7<
+//     KeysUploadRequest,
+//     KeysQueryRequest,
+//     KeysClaimRequest,
+//     ToDeviceRequest,
+//     SignatureUploadRequest,
+//     RoomMessageRequest,
+//     KeysBackupRequest,
+// >;
+// I know this doesn't make any sense but it compiles for until its needed :)
+pub type OutgoingRequests = u64;
 
 pub(crate) struct OutgoingRequest(pub(crate) matrix_sdk_crypto::OutgoingRequest);
 
@@ -270,33 +273,34 @@ impl TryFrom<OutgoingRequest> for OutgoingRequests {
         let request_id = outgoing_request.0.request_id().to_string();
 
         Ok(match outgoing_request.0.request() {
-            matrix_sdk_crypto::OutgoingRequests::KeysUpload(request) => {
-                Either7::A(KeysUploadRequest::try_from((request_id, request))?)
-            }
+            _ => 0
+            // matrix_sdk_crypto::OutgoingRequests::KeysUpload(request) => {
+            //     Either7::A(KeysUploadRequest::try_from((request_id, request))?)
+            // }
 
-            matrix_sdk_crypto::OutgoingRequests::KeysQuery(request) => {
-                Either7::B(KeysQueryRequest::try_from((request_id, request))?)
-            }
+            // matrix_sdk_crypto::OutgoingRequests::KeysQuery(request) => {
+            //     Either7::B(KeysQueryRequest::try_from((request_id, request))?)
+            // }
 
-            matrix_sdk_crypto::OutgoingRequests::KeysClaim(request) => {
-                Either7::C(KeysClaimRequest::try_from((request_id, request))?)
-            }
+            // matrix_sdk_crypto::OutgoingRequests::KeysClaim(request) => {
+            //     Either7::C(KeysClaimRequest::try_from((request_id, request))?)
+            // }
 
-            matrix_sdk_crypto::OutgoingRequests::ToDeviceRequest(request) => {
-                Either7::D(ToDeviceRequest::try_from((request_id, request))?)
-            }
+            // matrix_sdk_crypto::OutgoingRequests::ToDeviceRequest(request) => {
+            //     Either7::D(ToDeviceRequest::try_from((request_id, request))?)
+            // }
 
-            matrix_sdk_crypto::OutgoingRequests::SignatureUpload(request) => {
-                Either7::E(SignatureUploadRequest::try_from((request_id, request))?)
-            }
+            // matrix_sdk_crypto::OutgoingRequests::SignatureUpload(request) => {
+            //     Either7::E(SignatureUploadRequest::try_from((request_id, request))?)
+            // }
 
-            matrix_sdk_crypto::OutgoingRequests::RoomMessage(request) => {
-                Either7::F(RoomMessageRequest::try_from((request_id, request))?)
-            }
+            // matrix_sdk_crypto::OutgoingRequests::RoomMessage(request) => {
+            //     Either7::F(RoomMessageRequest::try_from((request_id, request))?)
+            // }
 
-            matrix_sdk_crypto::OutgoingRequests::KeysBackup(request) => {
-                Either7::G(KeysBackupRequest::try_from((request_id, request))?)
-            }
+            // matrix_sdk_crypto::OutgoingRequests::KeysBackup(request) => {
+            //     Either7::G(KeysBackupRequest::try_from((request_id, request))?)
+            // }
         })
     }
 }

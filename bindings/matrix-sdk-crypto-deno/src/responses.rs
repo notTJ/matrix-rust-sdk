@@ -75,7 +75,7 @@ impl From<KeysBackupResponse> for OwnedResponse {
 }
 
 impl TryFrom<(RequestType, http::Response<Vec<u8>>)> for OwnedResponse {
-    type Error = napi::Error;
+    type Error = crate::errors::Error;
 
     fn try_from(
         (request_type, response): (RequestType, http::Response<Vec<u8>>),
