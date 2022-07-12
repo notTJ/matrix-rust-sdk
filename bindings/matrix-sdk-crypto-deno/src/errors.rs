@@ -16,7 +16,7 @@ where
 {
     fn from(error: E) -> Self {
         // convert from lib error (deno bindings or something, napi did this)
-        let error_from_reason = Error::from_reason(error.to_string());
+        let error_from_reason = Error::from_reason_internal(error.to_string());
         return Self {
             message: error_from_reason.message,
         };
@@ -24,10 +24,15 @@ where
 }
 
 impl Error {
-    fn from_reason(reason: String) -> Error {
+    // this is made public to simulate an error type created by something like napi (ie deno_bindgen)
+    fn from_reason_internal(reason: String) -> Error {
         
         let error = Error { message: String::from(reason) };
         return error;
+    }
+
+    pub fn from_reason(reason: &str) -> Error {
+        Self::from_reason_internal(reason.to_string())
     }
 }
 
@@ -46,3 +51,5 @@ where
 {
     Error::from(error).into()
 }
+
+// pub type Result = Result<Self, Error>;
