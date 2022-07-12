@@ -2,6 +2,8 @@
 // #[derive(Debug)]
 // pub struct Error(napi::Error);
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 // this code was copied from the nodejs bindings.
 // perhaps unecessary, for now it mayt be convenient to express everything
 // in 'matrix-sdk-deno' errors in case ~other errors~ need to be handled from other libs or something
