@@ -250,15 +250,15 @@ request!(SignatureUploadRequest from RumaSignatureUploadRequest maps fields sign
 request!(RoomMessageRequest from RumaRoomMessageRequest maps fields room_id, txn_id, content);
 request!(KeysBackupRequest from RumaKeysBackupRequest maps fields rooms);
 
-pub type OutgoingRequests = Either7<
-    KeysUploadRequest,
-    KeysQueryRequest,
-    KeysClaimRequest,
-    ToDeviceRequest,
-    SignatureUploadRequest,
-    RoomMessageRequest,
-    KeysBackupRequest,
->;
+// pub type OutgoingRequests = Either7<
+//     KeysUploadRequest,
+//     KeysQueryRequest,
+//     KeysClaimRequest,
+//     ToDeviceRequest,
+//     SignatureUploadRequest,
+//     RoomMessageRequest,
+//     KeysBackupRequest,
+// >;
 
 pub(crate) struct OutgoingRequest(pub(crate) matrix_sdk_crypto::OutgoingRequest);
 

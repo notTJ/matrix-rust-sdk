@@ -31,8 +31,23 @@ impl From<ruma::OwnedUserId> for UserId {
 impl UserId {
     /// Parse/validate and create a new `UserId`.
     // #[napi(constructor)]
-    pub fn new(id: String) -> Result<Self, Error> {
-        Ok(Self::from(ruma::UserId::parse(id.as_str()).map_err(into_err)?))
+    // pub fn new(id: String) -> Result<Self, Error> {
+    //     Ok(Self::from(ruma::UserId::parse(id.as_str()).map_err(into_err)?))
+    // }
+    
+    pub fn new(id: &str) -> Result<Self, Error> {
+        Ok(Self::from(ruma::UserId::parse(id)?))
+    }
+
+    /// Returns the server name of the user ID.
+    // #[wasm_bindgen(getter, js_name = "serverName")]
+    pub fn server_name(&self) -> ServerName {
+        ServerName { inner: self.inner.server_name().to_owned() }
+    }
+
+    // #[wasm_bindgen(js_name = "isHistorical")]
+    pub fn is_historical(&self) -> bool {
+        self.inner.is_historical()
     }
 
     /// Return the user ID as a string.
@@ -67,8 +82,13 @@ impl From<ruma::OwnedDeviceId> for DeviceId {
 impl DeviceId {
     /// Create a new `DeviceId`.
     // #[napi(constructor)]
-    pub fn new(id: String) -> Self {
-        Self::from(Into::<ruma::OwnedDeviceId>::into(id))
+    // pub fn new(id: String) -> Self {
+    //     Self::from(Into::<ruma::OwnedDeviceId>::into(id))
+    // }
+
+    // #[wasm_bindgen(constructor)]
+    pub fn new(id: &str) -> DeviceId {
+        Self::from(ruma::OwnedDeviceId::from(id))
     }
 
     /// Return the device ID as a string.
@@ -98,8 +118,13 @@ impl From<ruma::OwnedRoomId> for RoomId {
 impl RoomId {
     /// Parse/validate and create a new `RoomId`.
     // #[napi(constructor)]
-    pub fn new(id: String) -> Result<Self, Error> {
-        Ok(Self::from(ruma::RoomId::parse(id).map_err(into_err)?))
+    // pub fn new(id: String) -> Result<Self, Error> {
+    //     Ok(Self::from(ruma::RoomId::parse(id).map_err(into_err)?))
+    // }
+
+    // #[wasm_bindgen(constructor)]
+    pub fn new(id: &str) -> Result<RoomId, Error> {
+        Ok(Self::from(ruma::RoomId::parse(id)?))
     }
 
     /// Returns the user's localpart.
@@ -138,8 +163,12 @@ pub struct ServerName {
 impl ServerName {
     /// Parse/validate and create a new `ServerName`.
     // #[napi(constructor)]
-    pub fn new(name: String) -> Result<Self, Error> {
-        Ok(Self { inner: ruma::ServerName::parse(name).map_err(into_err)? })
+    // pub fn new(name: String) -> Result<Self, Error> {
+    //     Ok(Self { inner: ruma::ServerName::parse(name).map_err(into_err)? })
+    // }
+    // #[wasm_bindgen(constructor)]
+    pub fn new(name: &str) -> Result<ServerName, Error> {
+        Ok(Self { inner: ruma::ServerName::parse(name)? })
     }
 
     /// Returns the host of the server name.

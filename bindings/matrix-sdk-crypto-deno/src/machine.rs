@@ -16,7 +16,7 @@ use serde_json::Value as JsonValue;
 use zeroize::Zeroize;
 
 use crate::{
-    encryption, identifiers, into_err, requests, responses, responses::response_from_string,
+    encryption, identifiers, into_err, requests::{self, OutgoingRequest}, responses, responses::response_from_string,
     sync_events,
 };
 
@@ -192,8 +192,8 @@ impl OlmMachine {
     pub async fn outgoing_requests(
         &self,
     ) -> crate::errors::Result<
-        Vec<
-            requests::OutgoingRequests
+        Vec<requests::OutgoingRequest
+            // requests::OutgoingRequests
             // We could be tempted to use `requests::OutgoingRequests` as its
             // a type alias for this giant `Either7`. But `napi` won't unfold
             // it properly into a valid TypeScript definition, so…  let's

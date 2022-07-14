@@ -23,20 +23,17 @@ const opts = {
 }
 const _lib = await prepare(opts, {})
 /**
- * The verification state of the device that sent an event to us.
+ * An encryption algorithm to be used to encrypt messages sent to a
+ * room.
  */
-export type VerificationState = /**
-   * The device is trusted.
+export type EncryptionAlgorithm = /**
+   * Olm version 1 using Curve25519, AES-256, and SHA-256.
    */
-  | "Trusted"
+  | "OlmV1Curve25519AesSha2"
   | /**
-   * The device is not trusted.
+   * Megolm version 1 using AES-256 and SHA-256.
    */
-  "Untrusted"
-  | /**
-   * The device is not known to us.
-   */
-  "UnknownDevice"
+  "MegolmV1AesSha2"
 /**
  * Represent the type of a request.
  */
@@ -68,6 +65,158 @@ export type RequestType = /**
    * Represents a `KeysBackupRequest`.
    */
   "KeysBackup"
+/**
+ * A Matrix [user ID].
+ *
+ * [user ID]: https://spec.matrix.org/v1.2/appendices/#user-identifiers
+ */
+export type SimpleUserId = {
+  id: number
+}
+/**
+ * The verification state of the device that sent an event to us.
+ */
+export type VerificationState = /**
+   * The device is trusted.
+   */
+  | "Trusted"
+  | /**
+   * The device is not trusted.
+   */
+  "Untrusted"
+  | /**
+   * The device is not known to us.
+   */
+  "UnknownDevice"
+/**
+ * A request that will back up a batch of room keys to the server
+ * ([specification]).
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#put_matrixclientv3room_keyskeys
+ */
+export type KeysBackupRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"rooms": …}
+   * ```
+   */
+  body: string
+}
+/**
+ * Data for a request to the `/keys/query` API endpoint
+ * ([specification]).
+ *
+ * Returns the current devices and identity keys for the given users.
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#post_matrixclientv3keysquery
+ */
+export type KeysQueryRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"timeout": …, "device_keys": …, "token": …}
+   * ```
+   */
+  body: string
+}
+/**
+ * A customized owned request type for sending out room messages
+ * ([specification]).
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#put_matrixclientv3roomsroomidsendeventtypetxnid
+ */
+export type RoomMessageRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"room_id": …, "txn_id": …, "content": …}
+   * ```
+   */
+  body: string
+}
+/**
+ * Data for a request to the `/keys/claim` API endpoint
+ * ([specification]).
+ *
+ * Claims one-time keys that can be used to establish 1-to-1 E2EE
+ * sessions.
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#post_matrixclientv3keysclaim
+ */
+export type KeysClaimRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"timeout": …, "one_time_keys": …}
+   * ```
+   */
+  body: string
+}
+/**
+ * Data for a request to the `/keys/upload` API endpoint
+ * ([specification]).
+ *
+ * Publishes end-to-end encryption keys for the device.
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#post_matrixclientv3keysupload
+ */
+export type KeysUploadRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"device_keys": …, "one_time_keys": …}
+   * ```
+   */
+  body: string
+}
+/**
+ * Data for a request to the `/sendToDevice` API endpoint
+ * ([specification]).
+ *
+ * Send an event to a single device or to a group of devices.
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#put_matrixclientv3sendtodeviceeventtypetxnid
+ */
+export type ToDeviceRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"event_type": …, "txn_id": …, "messages": …}
+   * ```
+   */
+  body: string
+}
 /**
  * Who can see a room's history.
  */
@@ -101,22 +250,24 @@ export type HistoryVisibility = /**
    */
   "WorldReadable"
 /**
- * An encryption algorithm to be used to encrypt messages sent to a
- * room.
- */
-export type EncryptionAlgorithm = /**
-   * Olm version 1 using Curve25519, AES-256, and SHA-256.
-   */
-  | "OlmV1Curve25519AesSha2"
-  | /**
-   * Megolm version 1 using AES-256 and SHA-256.
-   */
-  "MegolmV1AesSha2"
-/**
- * A Matrix [user ID].
+ * Data for a request to the `/keys/signatures/upload` API endpoint
+ * ([specification]).
  *
- * [user ID]: https://spec.matrix.org/v1.2/appendices/#user-identifiers
+ * Publishes cross-signing signatures for the user.
+ *
+ * [specification]: https://spec.matrix.org/unstable/client-server-api/#post_matrixclientv3keyssignaturesupload
  */
-export type SimpleUserId = {
-  id: number
+export type SignatureUploadRequest = {
+  /**
+   * The request ID.
+   */
+  id: string
+  /**
+   * A JSON-encoded object of form:
+   *
+   * ```json
+   * {"signed_keys": …, "txn_id": …, "messages": …}
+   * ```
+   */
+  body: string
 }

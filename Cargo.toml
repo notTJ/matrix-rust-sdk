@@ -3,15 +3,15 @@ members = [
     # "benchmarks",
     # "bindings/matrix-sdk-crypto-ffi",
     "bindings/matrix-sdk-crypto-deno",
-    # "bindings/matrix-sdk-crypto-js",
+    "bindings/matrix-sdk-crypto-js",
     # "bindings/matrix-sdk-crypto-nodejs",
     # "bindings/matrix-sdk-ffi",
-    # "crates/*",
+    "crates/*",
     # "labs/*",
     # "xtask",
 ]
 # xtask, labs and the bindings should only be built when invoked explicitly.
-# default-members = ["benchmarks", "crates/*"]
+default-members = ["bindings/matrix-sdk-crypto-deno", "bindings/matrix-sdk-crypto-js", "crates/*"]
 # resolver = "2"
 
 # [profile.release]

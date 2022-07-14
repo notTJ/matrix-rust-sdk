@@ -24,6 +24,9 @@ pub mod machine;
 pub mod requests;
 pub mod responses;
 pub mod sync_events;
+// for napi compat.....
+mod status;
+mod either;
 // #[cfg(feature = "tracing")]
 // pub mod tracing;
 
