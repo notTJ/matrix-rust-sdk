@@ -14,6 +14,7 @@
 // limitations under the License.
 
 use std::{
+    borrow::Borrow,
     collections::{BTreeMap, BTreeSet},
     fmt,
 };
@@ -441,7 +442,7 @@ impl BaseClient {
                 // having confusing profile changes when a member gets
                 // kicked/banned.
                 if member.state_key() == member.sender() {
-                    profiles.insert(member.sender().to_owned(), (&member).into());
+                    profiles.insert(member.sender().to_owned(), member.borrow().into());
                 }
 
                 members.insert(member.state_key().to_owned(), member);
@@ -854,7 +855,7 @@ impl BaseClient {
                             .profiles
                             .entry(room_id.to_owned())
                             .or_default()
-                            .insert(member.sender().to_owned(), (&member).into());
+                            .insert(member.sender().to_owned(), member.borrow().into());
                     }
 
                     changes
@@ -1104,7 +1105,10 @@ impl Default for BaseClient {
 
 #[cfg(test)]
 mod tests {
-    use matrix_sdk_test::{async_test, response_from_file, EventBuilder};
+    use matrix_sdk_test::{
+        async_test, response_from_file, EventBuilder, InvitedRoomBuilder, LeftRoomBuilder,
+        StrippedStateTestEvent, TimelineTestEvent,
+    };
     use ruma::{
         api::{client as api, IncomingResponse},
         room_id, user_id,
@@ -1132,9 +1136,8 @@ mod tests {
         let mut ev_builder = EventBuilder::new();
 
         let response = ev_builder
-            .add_custom_left_event(
-                room_id,
-                json!({
+            .add_left_room(LeftRoomBuilder::new(room_id).add_timeline_event(
+                TimelineTestEvent::Custom(json!({
                     "content": {
                         "displayname": "Alice",
                         "membership": "left",
@@ -1144,16 +1147,15 @@ mod tests {
                     "sender": user_id,
                     "state_key": user_id,
                     "type": "m.room.member",
-                }),
-            )
+                })),
+            ))
             .build_sync_response();
         client.receive_sync_response(response).await.unwrap();
         assert_eq!(client.get_room(room_id).unwrap().room_type(), RoomType::Left);
 
         let response = ev_builder
-            .add_custom_invited_event(
-                room_id,
-                json!({
+            .add_invited_room(InvitedRoomBuilder::new(room_id).add_state_event(
+                StrippedStateTestEvent::Custom(json!({
                     "content": {
                         "displayname": "Alice",
                         "membership": "invite",
@@ -1163,8 +1165,8 @@ mod tests {
                     "sender": "@example:example.org",
                     "state_key": user_id,
                     "type": "m.room.member",
-                }),
-            )
+                })),
+            ))
             .build_sync_response();
         client.receive_sync_response(response).await.unwrap();
         assert_eq!(client.get_room(room_id).unwrap().room_type(), RoomType::Invited);

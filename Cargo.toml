@@ -17,7 +17,8 @@ default-members = ["bindings/matrix-sdk-crypto-deno", "bindings/matrix-sdk-crypt
 # [profile.release]
 # lto = true
 
-# [profile.dev.package]
-# # Optimize quote even in debug mode. Speeds up proc-macros enough to account
-# # for the extra time of optimizing it for a clean build of matrix-sdk-ffi.
-# quote = { opt-level = 2 }
+[profile.dev.package]
+# Optimize quote even in debug mode. Speeds up proc-macros enough to account
+# for the extra time of optimizing it for a clean build of matrix-sdk-ffi.
+quote = { opt-level = 2 }
+sha2 = { opt-level = 2 }

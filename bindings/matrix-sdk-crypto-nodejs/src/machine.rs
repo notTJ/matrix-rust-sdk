@@ -15,8 +15,8 @@ use serde_json::Value as JsonValue;
 use zeroize::Zeroize;
 
 use crate::{
-    encryption, identifiers, into_err, requests, responses, responses::response_from_string,
-    sync_events,
+    encryption, identifiers, into_err, olm, requests, responses, responses::response_from_string,
+    sync_events, types, vodozemac,
 };
 
 /// State machine implementation of the Olm/Megolm encryption protocol
@@ -56,13 +56,16 @@ impl OlmMachine {
     ///   data at rest in the store. **Warning**, if no passphrase is given, the
     ///   store and all its data will remain unencrypted. This argument is
     ///   ignored if `store_path` is not set.
-    #[napi]
+    #[napi(strict)]
     pub async fn initialize(
         user_id: &identifiers::UserId,
         device_id: &identifiers::DeviceId,
         store_path: Option<String>,
         mut store_passphrase: Option<String>,
     ) -> napi::Result<OlmMachine> {
+        let user_id = user_id.clone();
+        let device_id = device_id.clone();
+
         let store = store_path
             .map(|store_path| {
                 matrix_sdk_sled::CryptoStore::open_with_passphrase(
@@ -121,7 +124,7 @@ impl OlmMachine {
 
     /// Get the public parts of our Olm identity keys.
     #[napi(getter)]
-    pub fn identity_keys(&self) -> IdentityKeys {
+    pub fn identity_keys(&self) -> vodozemac::IdentityKeys {
         self.inner.identity_keys().into()
     }
 
@@ -141,7 +144,7 @@ impl OlmMachine {
     ///   response.
     /// * `one_time_keys_count`, the current one-time keys counts that the sync
     ///   response returned.
-    #[napi]
+    #[napi(strict)]
     pub async fn receive_sync_changes(
         &self,
         to_device_events: String,
@@ -150,7 +153,7 @@ impl OlmMachine {
         unused_fallback_keys: Vec<String>,
     ) -> napi::Result<String> {
         let to_device_events = serde_json::from_str(to_device_events.as_ref()).map_err(into_err)?;
-        let changed_devices = &changed_devices.inner;
+        let changed_devices = changed_devices.inner.clone();
         let one_time_key_counts = one_time_key_counts
             .iter()
             .map(|(key, value)| (DeviceKeyAlgorithm::from(key.as_str()), UInt::from(*value)))
@@ -167,7 +170,7 @@ impl OlmMachine {
                 .inner
                 .receive_sync_changes(
                     to_device_events,
-                    changed_devices,
+                    &changed_devices,
                     &one_time_key_counts,
                     unused_fallback_keys.as_deref(),
                 )
@@ -212,8 +215,7 @@ impl OlmMachine {
             .into_iter()
             .map(requests::OutgoingRequest)
             .map(TryFrom::try_from)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(into_err)
+            .collect()
     }
 
     /// Mark the request with the given request ID as sent.
@@ -225,7 +227,7 @@ impl OlmMachine {
     /// * `request_type`, the request type associated to the request ID.
     /// * `response`, the response that was received from the server after the
     ///   outgoing request was sent out.
-    #[napi]
+    #[napi(strict)]
     pub async fn mark_request_as_sent(
         &self,
         request_id: String,
@@ -270,14 +272,20 @@ impl OlmMachine {
     /// * `users`, the list of users that we should check if we lack a session
     ///   with one of their devices. This can be an empty array or `null` when
     ///   calling this method between sync requests.
-    #[napi]
+    #[napi(strict)]
     pub async fn get_missing_sessions(
         &self,
         users: Option<Vec<&identifiers::UserId>>,
     ) -> napi::Result<Option<requests::KeysClaimRequest>> {
+        let users = users
+            .unwrap_or_default()
+            .into_iter()
+            .map(|user| user.inner.clone())
+            .collect::<Vec<_>>();
+
         match self
             .inner
-            .get_missing_sessions(identifiers::lower_user_ids_to_ruma(users.unwrap_or_default()))
+            .get_missing_sessions(users.iter().map(AsRef::as_ref))
             .await
             .map_err(into_err)?
         {
@@ -304,9 +312,11 @@ impl OlmMachine {
     /// # Arguments
     ///
     /// * `users`, an array over user IDs that should be marked for tracking.
-    #[napi]
+    #[napi(strict)]
     pub async fn update_tracked_users(&self, users: Vec<&identifiers::UserId>) {
-        self.inner.update_tracked_users(identifiers::lower_user_ids_to_ruma(users)).await;
+        let users = users.into_iter().map(|user| user.inner.clone()).collect::<Vec<_>>();
+
+        self.inner.update_tracked_users(users.iter().map(AsRef::as_ref)).await;
     }
 
     /// Get to-device requests to share a room key with users in a room.
@@ -316,22 +326,22 @@ impl OlmMachine {
     /// * `room_id`, the room ID of the room where the room key will be used.
     /// * `users`, the list of users that should receive the room key.
     /// * `encryption_settings`, the encryption settings.
-    #[napi]
+    #[napi(strict)]
     pub async fn share_room_key(
         &self,
         room_id: &identifiers::RoomId,
         users: Vec<&identifiers::UserId>,
         encryption_settings: &encryption::EncryptionSettings,
     ) -> napi::Result<String> {
-        let room_id = room_id.inner.as_ref();
-        let users = identifiers::lower_user_ids_to_ruma(users);
+        let room_id = room_id.inner.clone();
+        let users = users.into_iter().map(|user| user.inner.clone()).collect::<Vec<_>>();
         let encryption_settings =
             matrix_sdk_crypto::olm::EncryptionSettings::from(encryption_settings);
 
         serde_json::to_string(
             &self
                 .inner
-                .share_room_key(room_id, users, encryption_settings)
+                .share_room_key(&room_id, users.iter().map(AsRef::as_ref), encryption_settings)
                 .await
                 .map_err(into_err)?,
         )
@@ -347,20 +357,20 @@ impl OlmMachine {
     /// * `event_type`, the plaintext type of the event.
     /// * `content`, the JSON-encoded content of the message that should be
     ///   encrypted.
-    #[napi]
+    #[napi(strict)]
     pub async fn encrypt_room_event(
         &self,
         room_id: &identifiers::RoomId,
         event_type: String,
         content: String,
     ) -> napi::Result<String> {
-        let room_id = room_id.inner.as_ref();
+        let room_id = room_id.inner.clone();
         let content: JsonValue = serde_json::from_str(content.as_str()).map_err(into_err)?;
 
         serde_json::to_string(
             &self
                 .inner
-                .encrypt_room_event_raw(room_id, content, event_type.as_ref())
+                .encrypt_room_event_raw(&room_id, content, event_type.as_ref())
                 .await
                 .map_err(into_err)?,
         )
@@ -373,7 +383,7 @@ impl OlmMachine {
     ///
     /// * `event`, the event that should be decrypted.
     /// * `room_id`, the ID of the room where the event was sent to.
-    #[napi]
+    #[napi(strict)]
     pub async fn decrypt_room_event(
         &self,
         event: String,
@@ -381,86 +391,26 @@ impl OlmMachine {
     ) -> napi::Result<responses::DecryptedRoomEvent> {
         let event: OriginalSyncRoomEncryptedEvent =
             serde_json::from_str(event.as_str()).map_err(into_err)?;
-        let room_id = room_id.inner.as_ref();
-        let room_event = self.inner.decrypt_room_event(&event, room_id).await.map_err(into_err)?;
+        let room_id = room_id.inner.clone();
+
+        let room_event = self.inner.decrypt_room_event(&event, &room_id).await.map_err(into_err)?;
 
         Ok(room_event.into())
     }
-}
 
-/// An Ed25519 public key, used to verify digital signatures.
-#[napi]
-#[derive(Clone)]
-pub struct Ed25519PublicKey {
-    inner: vodozemac::Ed25519PublicKey,
-}
-
-#[napi]
-impl Ed25519PublicKey {
-    /// The number of bytes an Ed25519 public key has.
-    #[napi(getter)]
-    pub fn length(&self) -> u32 {
-        vodozemac::Ed25519PublicKey::LENGTH as u32
-    }
-
-    /// Serialize an Ed25519 public key to an unpadded base64
-    /// representation.
+    /// Get the status of the private cross signing keys.
+    ///
+    /// This can be used to check which private cross signing keys we
+    /// have stored locally.
     #[napi]
-    pub fn to_base64(&self) -> String {
-        self.inner.to_base64()
-    }
-}
-
-/// A Curve25519 public key.
-#[napi]
-#[derive(Clone)]
-pub struct Curve25519PublicKey {
-    inner: vodozemac::Curve25519PublicKey,
-}
-
-#[napi]
-impl Curve25519PublicKey {
-    /// The number of bytes a Curve25519 public key has.
-    #[napi(getter)]
-    pub fn length(&self) -> u32 {
-        vodozemac::Curve25519PublicKey::LENGTH as u32
+    pub async fn cross_signing_status(&self) -> olm::CrossSigningStatus {
+        self.inner.cross_signing_status().await.into()
     }
 
-    /// Serialize an Curve25519 public key to an unpadded base64
-    /// representation.
-    #[napi]
-    pub fn to_base64(&self) -> String {
-        self.inner.to_base64()
-    }
-}
-
-/// Struct holding the two public identity keys of an account.
-#[napi]
-pub struct IdentityKeys {
-    ed25519: Ed25519PublicKey,
-    curve25519: Curve25519PublicKey,
-}
-
-#[napi]
-impl IdentityKeys {
-    /// The Ed25519 public key, used for signing.
-    #[napi(getter)]
-    pub fn ed25519(&self) -> Ed25519PublicKey {
-        self.ed25519.clone()
-    }
-
-    /// The Curve25519 public key, used for establish shared secrets.
-    #[napi(getter)]
-    pub fn curve25519(&self) -> Curve25519PublicKey {
-        self.curve25519.clone()
-    }
-}
-
-impl From<matrix_sdk_crypto::olm::IdentityKeys> for IdentityKeys {
-    fn from(value: matrix_sdk_crypto::olm::IdentityKeys) -> Self {
-        Self {
-            ed25519: Ed25519PublicKey { inner: value.ed25519 },
-            curve25519: Curve25519PublicKey { inner: value.curve25519 },
-        }
+    /// Sign the given message using our device key and if available
+    /// cross-signing master key.
+    #[napi(strict)]
+    pub async fn sign(&self, message: String) -> types::Signatures {
+        self.inner.sign(message.as_str()).await.into()
     }
 }
