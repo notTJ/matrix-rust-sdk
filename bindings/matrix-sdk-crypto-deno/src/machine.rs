@@ -1,111 +1,85 @@
-//! The crypto specific Olm objects.
-
 use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
 };
-
-// use napi::bindgen_prelude::Either7;
-// use napi_derive::*;
-use deno_bindgen::deno_bindgen;
+// use error::into_err;
+// use js_sys::{Array, Map, Promise, Set};
 use ruma::{
     events::room::encrypted::OriginalSyncRoomEncryptedEvent, DeviceKeyAlgorithm,
     OwnedTransactionId, UInt,
 };
 use serde_json::Value as JsonValue;
 use zeroize::Zeroize;
+use crate::Result;
+// use crate::JsValue;
 
 use crate::{
-    encryption, identifiers, into_err, requests::{self, OutgoingRequest}, responses, responses::response_from_string,
+    //downcast,
+    encryption,
+    // future::future_to_promise,
+    identifiers, requests,
+    requests::OutgoingRequest,
+    responses::{self, response_from_string},
     sync_events,
+    errors::into_err,
+    either,
 };
 
-
-/// State machine implementation of the Olm/Megolm encryption protocol
-/// used for Matrix end to end encryption.
-// #[napi]
+// #[wasm_bindgen]
+#[derive(Debug, Clone)]
 pub struct OlmMachine {
     inner: matrix_sdk_crypto::OlmMachine,
 }
 
-// #[napi]
 impl OlmMachine {
-    // JavaScript doesn't support asynchronous constructor. So let's
-    // use a factory pattern, where the constructor cannot be used (it
-    // returns an error), and a new method is provided to construct
-    // the object. napi provides `#[napi(factory)]` to address those
-    // needs automatically. Unfortunately, it doesn't support
-    // asynchronous factory methods.
-    //
-    // So let's do this manually. The `initialize` async method _is_
-    // the factory function. We also manually implement the
-    // constructor to raise an error when called.
 
-    /// Create a new memory-based `OlmMachine` asynchronously.
-    ///
-    /// The persistence of the encryption keys and all the inner
-    /// objects are controlled by the `store_path` argument.
-    ///
-    /// # Arguments
-    ///
-    /// * `user_id`, the unique ID of the user that owns this machine.
-    /// * `device_id`, the unique id of the device that owns this machine.
-    /// * `store_path`, the path to a directory where the state of the machine
-    ///   should be persisted; if not set, the created machine will keep the
-    ///   encryption keys only in memory, and once the object is dropped, the
-    ///   keys will be lost.
-    /// * `store_passphrase`, the passphrase that should be used to encrypt the
-    ///   data at rest in the store. **Warning**, if no passphrase is given, the
-    ///   store and all its data will remain unencrypted. This argument is
-    ///   ignored if `store_path` is not set.
-    // #[napi]
-    pub async fn initialize(
-        user_id: &identifiers::UserId,
-        device_id: &identifiers::DeviceId,
-        store_path: Option<String>,
-        mut store_passphrase: Option<String>,
-    ) -> crate::errors::Result<OlmMachine> {
-        let store = store_path
-            .map(|store_path| {
-                matrix_sdk_sled::CryptoStore::open_with_passphrase(
-                    store_path,
-                    store_passphrase.as_deref(),
-                )
-                .map(Arc::new)
-                .map_err(into_err)
-            })
-            .transpose()?;
+pub async fn initialize(
+    user_id: &identifiers::UserId,
+    device_id: &identifiers::DeviceId,
+    store_path: Option<String>,
+    mut store_passphrase: Option<String>,
+) -> Result<OlmMachine> {
+    let store = store_path
+        .map(|store_path| {
+            matrix_sdk_sled::CryptoStore::open_with_passphrase(
+                store_path,
+                store_passphrase.as_deref(),
+            )
+            .map(Arc::new)
+            .map_err(into_err)
+        })
+        .transpose()?;
 
-        store_passphrase.zeroize();
+    store_passphrase.zeroize();
 
-        Ok(OlmMachine {
-            inner: match store {
-                Some(store) => matrix_sdk_crypto::OlmMachine::with_store(
+    Ok(OlmMachine {
+        inner: match store {
+            Some(store) => matrix_sdk_crypto::OlmMachine::with_store(
+                user_id.inner.as_ref(),
+                device_id.inner.as_ref(),
+                store,
+            )
+            .await
+            .map_err(into_err)?,
+            None => {
+                matrix_sdk_crypto::OlmMachine::new(
                     user_id.inner.as_ref(),
                     device_id.inner.as_ref(),
-                    store,
                 )
                 .await
-                .map_err(into_err)?,
-                None => {
-                    matrix_sdk_crypto::OlmMachine::new(
-                        user_id.inner.as_ref(),
-                        device_id.inner.as_ref(),
-                    )
-                    .await
-                }
-            },
-        })
-    }
+            }
+        },
+    })
+}
+
 
     /// It's not possible to construct an `OlmMachine` with its
     /// constructor because building an `OlmMachine` is
     /// asynchronous. Please use the `finalize` method.
     // #[napi(constructor)]
     #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> Result<Self, crate::errors::Error> { // napi::Result<()> {
-
-        Err(crate::errors::Error::from_reason(
+    pub fn new() -> Result<()> {
+        Err(crate::errors::DenoError::from_reason(
             "To build an `OldMachine`, please use the `initialize` method",
         ))
     }
@@ -151,7 +125,7 @@ impl OlmMachine {
         changed_devices: &sync_events::DeviceLists,
         one_time_key_counts: HashMap<String, u32>,
         unused_fallback_keys: Vec<String>,
-    ) -> crate::errors::Result<String> {
+    ) -> Result<String> {
         let to_device_events = serde_json::from_str(to_device_events.as_ref()).map_err(into_err)?;
         let changed_devices = &changed_devices.inner;
         let one_time_key_counts = one_time_key_counts
@@ -189,36 +163,49 @@ impl OlmMachine {
     /// need to be sent out to the server and the responses need to be
     /// passed back to the state machine using `mark_request_as_sent`.
     // #[napi]
-    pub async fn outgoing_requests(
-        &self,
-    ) -> crate::errors::Result<
-        Vec<requests::OutgoingRequest
-            // requests::OutgoingRequests
-            // We could be tempted to use `requests::OutgoingRequests` as its
-            // a type alias for this giant `Either7`. But `napi` won't unfold
-            // it properly into a valid TypeScript definition, so…  let's
-            // copy-paste :-(.
-            // Either7<
-            //     requests::KeysUploadRequest,
-            //     requests::KeysQueryRequest,
-            //     requests::KeysClaimRequest,
-            //     requests::ToDeviceRequest,
-            //     requests::SignatureUploadRequest,
-            //     requests::RoomMessageRequest,
-            //     requests::KeysBackupRequest,
-            // >,
-        >,
-    > {
-        self.inner
-            .outgoing_requests()
-            .await
-            .map_err(into_err)?
-            .into_iter()
-            .map(requests::OutgoingRequest)
-            .map(TryFrom::try_from)
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(into_err)
-    }
+    // pub async fn outgoing_requests(
+    //     &self,
+    // ) -> Result<
+    //     Vec<
+    //         // We could be tempted to use `requests::OutgoingRequests` as its
+    //         // a type alias for this giant `Either7`. But `napi` won't unfold
+    //         // it properly into a valid TypeScript definition, so…  let's
+    //         // copy-paste :-(.
+    //         Either7<
+    //             requests::KeysUploadRequest,
+    //             requests::KeysQueryRequest,
+    //             requests::KeysClaimRequest,
+    //             requests::ToDeviceRequest,
+    //             requests::SignatureUploadRequest,
+    //             requests::RoomMessageRequest,
+    //             requests::KeysBackupRequest,
+    //         >,
+    //     >,
+    // > {
+    //     self.inner
+    //         .outgoing_requests()
+    //         .await
+    //         .map_err(into_err)?
+    //         .into_iter()
+    //         .map(requests::OutgoingRequest)
+    //         .map(TryFrom::try_from)
+    //         .collect::<Result<Vec<_>, _>>()
+    //         .map_err(into_err)
+    // }
+
+    // pub fn outgoing_requests(&self) -> Promise {
+    //     let me = self.inner.clone();
+
+    //         Ok(me
+    //             .outgoing_requests()
+    //             .await?
+    //             .into_iter()
+    //             .map(OutgoingRequest)
+    //             .map(TryFrom::try_from)
+    //             .collect::<Result<Vec<JsValue>, _>>()?
+    //             .into_iter()
+    //             .collect::<Array>());
+    // }
 
     /// Mark the request with the given request ID as sent.
     ///
@@ -235,7 +222,7 @@ impl OlmMachine {
         request_id: String,
         request_type: requests::RequestType,
         response: String,
-    ) -> crate::errors::Result<bool> { // Result<Self, bool> { // napi::Result<bool> {
+    ) -> Result<bool> {
         let transaction_id = OwnedTransactionId::from(request_id);
         let response = response_from_string(response.as_str()).map_err(into_err)?;
         let incoming_response = responses::OwnedResponse::try_from((request_type, response))?;
@@ -278,7 +265,7 @@ impl OlmMachine {
     pub async fn get_missing_sessions(
         &self,
         users: Option<Vec<&identifiers::UserId>>,
-    ) -> crate::errors::Result<Option<requests::KeysClaimRequest>> {
+    ) -> Result<Option<requests::KeysClaimRequest>> {
         match self
             .inner
             .get_missing_sessions(identifiers::lower_user_ids_to_ruma(users.unwrap_or_default()))
@@ -326,7 +313,7 @@ impl OlmMachine {
         room_id: &identifiers::RoomId,
         users: Vec<&identifiers::UserId>,
         encryption_settings: &encryption::EncryptionSettings,
-    ) -> crate::errors::Result<String> {
+    ) -> Result<String> {
         let room_id = room_id.inner.as_ref();
         let users = identifiers::lower_user_ids_to_ruma(users);
         let encryption_settings =
@@ -357,7 +344,7 @@ impl OlmMachine {
         room_id: &identifiers::RoomId,
         event_type: String,
         content: String,
-    ) -> crate::errors::Result<String>  {
+    ) -> Result<String> {
         let room_id = room_id.inner.as_ref();
         let content: JsonValue = serde_json::from_str(content.as_str()).map_err(into_err)?;
 
@@ -382,7 +369,7 @@ impl OlmMachine {
         &self,
         event: String,
         room_id: &identifiers::RoomId,
-    ) -> crate::errors::Result<responses::DecryptedRoomEvent> {
+    ) -> Result<responses::DecryptedRoomEvent> {
         let event: OriginalSyncRoomEncryptedEvent =
             serde_json::from_str(event.as_str()).map_err(into_err)?;
         let room_id = room_id.inner.as_ref();

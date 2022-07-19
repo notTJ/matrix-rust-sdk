@@ -15,6 +15,7 @@
 // #![doc = include_str!("../README.md")]
 // #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 //#![warn(missing_docs, missing_debug_implementations)]
+pub type Result<T> = std::result::Result<T, crate::errors::DenoError>;
 
 pub mod encryption;
 mod errors;
@@ -24,10 +25,61 @@ pub mod machine;
 pub mod requests;
 pub mod responses;
 pub mod sync_events;
-// for napi compat.....
-mod status;
-mod either;
+pub mod either;
 // #[cfg(feature = "tracing")]
 // pub mod tracing;
 
+use errors::DenoError;
+
 use crate::errors::into_err;
+
+pub trait UnwrapThrowExt<T>: Sized {
+    /// Unwrap this `Option` or `Result`, but instead of panicking on failure,
+    /// throw an exception to JavaScript.
+    fn unwrap_throw(self) -> T {
+        self.expect_throw("`unwrap_throw` failed")
+    }
+
+    /// Unwrap this container's `T` value, or throw an error to JS with the
+    /// given message if the `T` value is unavailable (e.g. an `Option<T>` is
+    /// `None`).
+    fn expect_throw(self, message: &str) -> T;
+}
+
+impl<T> UnwrapThrowExt<T> for Option<T> {
+    fn expect_throw(self, message: &str) -> T {
+        if cfg!(all(target_arch = "wasm32", not(target_os = "emscripten"))) {
+            match self {
+                Some(val) => val,
+                None => throw_str(message),
+            }
+        } else {
+            self.expect(message)
+        }
+    }
+}
+
+impl<T, E> UnwrapThrowExt<T> for core::result::Result<T, E>
+where
+    E: core::fmt::Debug,
+{
+    fn expect_throw(self, message: &str) -> T {
+        // if cfg!(all(target_arch = "wasm32", not(target_os = "emscripten"))) {
+        //     match self {
+        //         Ok(val) => val,
+        //         Err(_) => throw_str(message),
+        //     }
+        // } else {
+        //     self.expect(message)
+        // }
+        match self {
+            Ok(val) => val,
+            Err(_) => throw_str(message),
+        }
+    }
+}
+
+
+pub fn throw_str(s: &str) -> ! {
+    panic!("{}", crate::errors::DenoError::from_reason(s).reason)
+}

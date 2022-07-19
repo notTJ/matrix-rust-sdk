@@ -1,7 +1,9 @@
+//! Types related to responses.
+use deno_bindgen::deno_bindgen;
+// use js_sys::{Array, JsString};
+pub type JsString = String;
 use matrix_sdk_common::deserialized_responses::{AlgorithmInfo, EncryptionInfo};
 use matrix_sdk_crypto::IncomingResponse;
-// use napi_derive::*;
-use deno_bindgen::deno_bindgen;
 pub(crate) use ruma::api::client::{
     backup::add_backup_keys::v3::Response as KeysBackupResponse,
     keys::{
@@ -13,8 +15,8 @@ pub(crate) use ruma::api::client::{
     to_device::send_event_to_device::v3::Response as ToDeviceResponse,
 };
 use ruma::api::IncomingResponse as RumaIncomingResponse;
-
-use crate::{encryption, identifiers, into_err, requests::RequestType};
+// use wasm_bindgen::prelude::*;
+use crate::{encryption, identifiers, requests::RequestType, errors::DenoError};
 
 pub(crate) fn response_from_string(body: &str) -> http::Result<http::Response<Vec<u8>>> {
     http::Response::builder().status(200).body(body.as_bytes().to_vec())
@@ -75,7 +77,7 @@ impl From<KeysBackupResponse> for OwnedResponse {
 }
 
 impl TryFrom<(RequestType, http::Response<Vec<u8>>)> for OwnedResponse {
-    type Error = crate::errors::Error;
+    type Error = DenoError;
 
     fn try_from(
         (request_type, response): (RequestType, http::Response<Vec<u8>>),
@@ -109,7 +111,7 @@ impl TryFrom<(RequestType, http::Response<Vec<u8>>)> for OwnedResponse {
                 KeysBackupResponse::try_from_http_response(response).map(Into::into)
             }
         }
-        .map_err(into_err)
+        .map_err(DenoError::from)
     }
 }
 
@@ -128,68 +130,69 @@ impl<'a> From<&'a OwnedResponse> for IncomingResponse<'a> {
 }
 
 /// A decrypted room event.
-// #[napi]
+// #[wasm_bindgen(getter_with_clone)]
+#[derive(Debug)]
 pub struct DecryptedRoomEvent {
     /// The JSON-encoded decrypted event.
-    // #[napi(readonly)]
-    pub event: String,
+    // #[wasm_bindgen(readonly)]
+    pub event: JsString,
 
     encryption_info: Option<EncryptionInfo>,
 }
 
-// #[napi]
+// #[wasm_bindgen]
 impl DecryptedRoomEvent {
     /// The user ID of the event sender, note this is untrusted data
     /// unless the `verification_state` is as well trusted.
-    // #[napi(getter)]
-    pub fn sender(&self) -> Option<identifiers::UserId> {
-        Some(identifiers::UserId::from(self.encryption_info.as_ref()?.sender.clone()))
-    }
+    // #[wasm_bindgen(getter)]
+    // pub fn sender(&self) -> Option<identifiers::UserId> {
+    //     Some(identifiers::UserId::from(self.encryption_info.as_ref()?.sender.clone()))
+    // }
 
     /// The device ID of the device that sent us the event, note this
     /// is untrusted data unless `verification_state` is as well
     /// trusted.
-    // #[napi(getter)]
-    pub fn sender_device(&self) -> Option<identifiers::DeviceId> {
-        Some(identifiers::DeviceId::from(self.encryption_info.as_ref()?.sender_device.clone()))
-    }
+    // #[wasm_bindgen(getter, js_name = "senderDevice")]
+    // pub fn sender_device(&self) -> Option<identifiers::DeviceId> {
+    //     Some(identifiers::DeviceId::from(self.encryption_info.as_ref()?.sender_device.clone()))
+    // }
 
     /// The Curve25519 key of the device that created the megolm
     /// decryption key originally.
-    // #[napi(getter)]
-    pub fn sender_curve25519_key(&self) -> Option<String> {
+    // #[wasm_bindgen(getter, js_name = "senderCurve25519Key")]
+    pub fn sender_curve25519_key(&self) -> Option<JsString> {
         Some(match &self.encryption_info.as_ref()?.algorithm_info {
-            AlgorithmInfo::MegolmV1AesSha2 { curve25519_key, .. } => curve25519_key.clone(),
+            AlgorithmInfo::MegolmV1AesSha2 { curve25519_key, .. } => curve25519_key.clone().into(),
         })
     }
 
     /// The signing Ed25519 key that have created the megolm key that
     /// was used to decrypt this session.
-    // #[napi(getter)]
-    pub fn sender_claimed_ed25519_key(&self) -> Option<String> {
-        match &self.encryption_info.as_ref()?.algorithm_info {
-            AlgorithmInfo::MegolmV1AesSha2 { sender_claimed_keys, .. } => {
-                sender_claimed_keys.get(&ruma::DeviceKeyAlgorithm::Ed25519).cloned()
-            }
-        }
-    }
+    // #[wasm_bindgen(getter, js_name = "senderClaimedEd25519Key")]
+    // pub fn sender_claimed_ed25519_key(&self) -> Option<JsString> {
+    //     match &self.encryption_info.as_ref()?.algorithm_info {
+    //         AlgorithmInfo::MegolmV1AesSha2 { sender_claimed_keys, .. } => {
+    //             sender_claimed_keys.get(&ruma::DeviceKeyAlgorithm::Ed25519).cloned().map(Into::into)
+    //         }
+    //     }
+    // }
 
     /// Chain of Curve25519 keys through which this session was
     /// forwarded, via `m.forwarded_room_key` events.
-    // #[napi(getter)]
-    pub fn forwarding_curve25519_key_chain(&self) -> Option<Vec<String>> {
-        Some(match &self.encryption_info.as_ref()?.algorithm_info {
-            AlgorithmInfo::MegolmV1AesSha2 { forwarding_curve25519_key_chain, .. } => {
-                forwarding_curve25519_key_chain.clone()
-            }
-        })
-    }
+    // #[wasm_bindgen(getter, js_name = "forwardingCurve25519KeyChain")]
+    // pub fn forwarding_curve25519_key_chain(&self) -> Option<Array> {
+    //     Some(match &self.encryption_info.as_ref()?.algorithm_info {
+    //         AlgorithmInfo::MegolmV1AesSha2 { forwarding_curve25519_key_chain, .. } => {
+    //             forwarding_curve25519_key_chain.iter().map(JsValue::from).collect()
+    //         }
+    //     })
+    // }
 
     /// The verification state of the device that sent us the event,
     /// note this is the state of the device at the time of
     /// decryption. It may change in the future if a device gets
     /// verified or deleted.
-    // #[napi(getter)]
+    // #[wasm_bindgen(getter, js_name = "verificationState")]
     pub fn verification_state(&self) -> Option<encryption::VerificationState> {
         Some((&self.encryption_info.as_ref()?.verification_state).into())
     }
@@ -197,6 +200,9 @@ impl DecryptedRoomEvent {
 
 impl From<matrix_sdk_common::deserialized_responses::RoomEvent> for DecryptedRoomEvent {
     fn from(value: matrix_sdk_common::deserialized_responses::RoomEvent) -> Self {
-        Self { event: value.event.json().get().to_owned(), encryption_info: value.encryption_info }
+        Self {
+            event: value.event.json().get().to_owned().into(),
+            encryption_info: value.encryption_info,
+        }
     }
 }

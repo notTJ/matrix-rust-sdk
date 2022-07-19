@@ -1,12 +1,9 @@
 //! Types related to events.
 
-// use napi::bindgen_prelude::ToNapiValue;
-// use napi_derive::*;
 use deno_bindgen::deno_bindgen;
 use ruma::events::room::history_visibility::HistoryVisibility as RumaHistoryVisibility;
 
 /// Who can see a room's history.
-// #[napi]
 #[deno_bindgen]
 #[derive(Debug, Clone, Copy)]
 pub enum HistoryVisibility {
@@ -36,7 +33,7 @@ pub enum HistoryVisibility {
     WorldReadable,
 }
 
-impl From<HistoryVisibility> for RumaHistoryVisibility {
+impl From<HistoryVisibility> for RumaHistoryVisibility { // ruma::events::room::history_visibility::HistoryVisibility {
     fn from(value: HistoryVisibility) -> Self {
         use HistoryVisibility::*;
 
