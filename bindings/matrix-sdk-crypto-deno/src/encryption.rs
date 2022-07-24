@@ -46,26 +46,26 @@ pub struct EncryptionSettings {
     pub history_visibility: events::HistoryVisibility,
 }
 
-impl Default for EncryptionSettings {
-    fn default() -> Self {
-        let default = matrix_sdk_crypto::olm::EncryptionSettings::default();
+// impl Default for EncryptionSettings {
+//     fn default() -> Self {
+//         let default = matrix_sdk_crypto::olm::EncryptionSettings::default();
 
-        Self {
-            algorithm: default.algorithm.into(),
-            rotation_period: default.rotation_period.as_micros().try_into().unwrap(),
-            rotation_period_messages: default.rotation_period_msgs,
-            history_visibility: default.history_visibility.into(),
-        }
-    }
-}
+//         Self {
+//             algorithm: default.algorithm.into(),
+//             rotation_period: default.rotation_period.as_micros().try_into().unwrap(),
+//             rotation_period_messages: default.rotation_period_msgs,
+//             history_visibility: default.history_visibility.into(),
+//         }
+//     }
+// }
 
 // // #[wasm_bindgen]
 impl EncryptionSettings {
-    /// Create a new `EncryptionSettings` with default values.
-    // #[wasm_bindgen(constructor)]
-    pub fn new() -> EncryptionSettings {
-        Self::default()
-    }
+    // /// Create a new `EncryptionSettings` with default values.
+    // // #[wasm_bindgen(constructor)]
+    // pub fn new() -> EncryptionSettings {
+    //     Self::default()
+    // }
 }
 
 // napi
@@ -90,16 +90,16 @@ impl EncryptionSettings {
 //     }
 // }
 
-impl From<&EncryptionSettings> for matrix_sdk_crypto::olm::EncryptionSettings {
-    fn from(value: &EncryptionSettings) -> Self {
-        Self {
-            algorithm: value.algorithm.clone().into(),
-            rotation_period: Duration::from_micros(value.rotation_period),
-            rotation_period_msgs: value.rotation_period_messages,
-            history_visibility: value.history_visibility.clone().into(),
-        }
-    }
-}
+// impl From<&EncryptionSettings> for matrix_sdk_crypto::olm::EncryptionSettings {
+//     fn from(value: &EncryptionSettings) -> Self {
+//         Self {
+//             algorithm: value.algorithm.clone().into(),
+//             rotation_period: Duration::from_micros(value.rotation_period),
+//             rotation_period_msgs: value.rotation_period_messages,
+//             history_visibility: value.history_visibility.clone().into(),
+//         }
+//     }
+// }
 
 impl From<EncryptionAlgorithm> for ruma::EventEncryptionAlgorithm {
     fn from(value: EncryptionAlgorithm) -> Self {

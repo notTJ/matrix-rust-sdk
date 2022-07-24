@@ -4,7 +4,7 @@ members = [
     # "bindings/matrix-sdk-crypto-ffi",
     "bindings/matrix-sdk-crypto-deno",
     "bindings/matrix-sdk-crypto-js",
-    # "bindings/matrix-sdk-crypto-nodejs",
+    "bindings/matrix-sdk-crypto-nodejs",
     # "bindings/matrix-sdk-ffi",
     "crates/*",
     # "labs/*",

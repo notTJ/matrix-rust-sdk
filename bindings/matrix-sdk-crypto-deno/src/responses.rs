@@ -115,19 +115,19 @@ impl TryFrom<(RequestType, http::Response<Vec<u8>>)> for OwnedResponse {
     }
 }
 
-impl<'a> From<&'a OwnedResponse> for IncomingResponse<'a> {
-    fn from(response: &'a OwnedResponse) -> Self {
-        match response {
-            OwnedResponse::KeysUpload(response) => IncomingResponse::KeysUpload(response),
-            OwnedResponse::KeysQuery(response) => IncomingResponse::KeysQuery(response),
-            OwnedResponse::KeysClaim(response) => IncomingResponse::KeysClaim(response),
-            OwnedResponse::ToDevice(response) => IncomingResponse::ToDevice(response),
-            OwnedResponse::SignatureUpload(response) => IncomingResponse::SignatureUpload(response),
-            OwnedResponse::RoomMessage(response) => IncomingResponse::RoomMessage(response),
-            OwnedResponse::KeysBackup(response) => IncomingResponse::KeysBackup(response),
-        }
-    }
-}
+// impl<'a> From<&'a OwnedResponse> for IncomingResponse<'a> {
+//     fn from(response: &'a OwnedResponse) -> Self {
+//         match response {
+//             OwnedResponse::KeysUpload(response) => IncomingResponse::KeysUpload(response),
+//             OwnedResponse::KeysQuery(response) => IncomingResponse::KeysQuery(response),
+//             OwnedResponse::KeysClaim(response) => IncomingResponse::KeysClaim(response),
+//             OwnedResponse::ToDevice(response) => IncomingResponse::ToDevice(response),
+//             OwnedResponse::SignatureUpload(response) => IncomingResponse::SignatureUpload(response),
+//             OwnedResponse::RoomMessage(response) => IncomingResponse::RoomMessage(response),
+//             OwnedResponse::KeysBackup(response) => IncomingResponse::KeysBackup(response),
+//         }
+//     }
+// }
 
 /// A decrypted room event.
 // #[wasm_bindgen(getter_with_clone)]

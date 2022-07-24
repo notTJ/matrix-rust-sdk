@@ -1,7 +1,7 @@
 
 use deno_bindgen::deno_bindgen;
 use crate::errors::Result;
-
+use crate::into_err;
 #[deno_bindgen]
 #[derive(Debug, Clone)]
 pub struct SimpleUserId {
@@ -17,9 +17,9 @@ pub struct UserId {
     pub(crate) inner: ruma::OwnedUserId,
 }
 
-pub(crate) fn lower_user_ids_to_ruma(users: Vec<&UserId>) -> impl Iterator<Item = &ruma::UserId> {
-    users.into_iter().map(|user| user.inner.as_ref())
-}
+// pub(crate) fn lower_user_ids_to_ruma(users: Vec<&UserId>) -> impl Iterator<Item = &ruma::UserId> {
+//     users.into_iter().map(|user| user.inner.as_ref())
+// }
 
 impl From<ruma::OwnedUserId> for UserId {
     fn from(inner: ruma::OwnedUserId) -> Self {
@@ -28,22 +28,22 @@ impl From<ruma::OwnedUserId> for UserId {
 }
 
 
-// #[wasm_bindgen]
+// #[napi]
 impl UserId {
     /// Parse/validate and create a new `UserId`.
-    // #[wasm_bindgen(constructor)]
+    // #[napi(constructor, strict)]
     pub fn new(id: &str) -> Result<UserId> {
         Ok(Self::from(ruma::UserId::parse(id)?))
     }
 
     /// Returns the user's localpart.
-    // #[wasm_bindgen(getter)]
+    // #[napi(getter)]
     pub fn localpart(&self) -> String {
         self.inner.localpart().to_owned()
     }
 
     /// Returns the server name of the user ID.
-    // #[wasm_bindgen(getter, js_name = "serverName")]
+    // #[napi(getter)]
     pub fn server_name(&self) -> ServerName {
         ServerName { inner: self.inner.server_name().to_owned() }
     }
@@ -53,13 +53,13 @@ impl UserId {
     /// A historical user ID is one that doesn't conform to the latest
     /// specification of the user ID grammar but is still accepted
     /// because it was previously allowed.
-    // #[wasm_bindgen(js_name = "isHistorical")]
+    // #[napi]
     pub fn is_historical(&self) -> bool {
         self.inner.is_historical()
     }
 
     /// Return the user ID as a string.
-    // #[wasm_bindgen(js_name = "toString")]
+    // #[napi]
     #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         self.inner.as_str().to_owned()
@@ -70,7 +70,7 @@ impl UserId {
 ///
 /// Device identifiers in Matrix are completely opaque character
 /// sequences. This type is provided simply for its semantic value.
-// #[wasm_bindgen]
+// #[napi]
 #[derive(Debug, Clone)]
 pub struct DeviceId {
     pub(crate) inner: ruma::OwnedDeviceId,
@@ -82,26 +82,137 @@ impl From<ruma::OwnedDeviceId> for DeviceId {
     }
 }
 
-// #[wasm_bindgen]
+// #[napi]
 impl DeviceId {
     /// Create a new `DeviceId`.
-    // #[wasm_bindgen(constructor)]
+    // #[napi(constructor, strict)]
     pub fn new(id: &str) -> DeviceId {
         Self::from(ruma::OwnedDeviceId::from(id))
     }
 
     /// Return the device ID as a string.
-    // #[wasm_bindgen(js_name = "toString")]
+    // #[napi]
     #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         self.inner.as_str().to_owned()
     }
 }
 
+/// A Matrix device key ID.
+///
+/// A key algorithm and a device ID, combined with a ‘:’.
+// #[napi]
+#[derive(Debug, Clone)]
+pub struct DeviceKeyId {
+    pub(crate) inner: ruma::OwnedDeviceKeyId,
+}
+
+impl From<ruma::OwnedDeviceKeyId> for DeviceKeyId {
+    fn from(inner: ruma::OwnedDeviceKeyId) -> Self {
+        Self { inner }
+    }
+}
+
+// #[napi]
+impl DeviceKeyId {
+    /// Parse/validate and create a new `DeviceKeyId`.
+    // #[napi(constructor, strict)]
+    pub fn new(id: String) -> Result<Self> {
+        Ok(Self::from(ruma::DeviceKeyId::parse(id.as_str())))
+    }
+
+    /// Returns key algorithm of the device key ID.
+    // #[napi(getter)]
+    pub fn algorithm(&self) -> DeviceKeyAlgorithm {
+        self.inner.algorithm().into()
+    }
+
+    /// Returns device ID of the device key ID.
+    // #[napi(getter)]
+    pub fn device_id(&self) -> DeviceId {
+        self.inner.device_id().to_owned().into()
+    }
+
+    /// Return the device key ID as a string.
+    // #[napi]
+    #[allow(clippy::inherent_to_string)]
+    pub fn to_string(&self) -> String {
+        self.inner.to_string()
+    }
+}
+
+/// The basic key algorithms in the specification.
+// #[napi]
+pub struct DeviceKeyAlgorithm {
+    inner: ruma::DeviceKeyAlgorithm,
+}
+
+impl From<ruma::DeviceKeyAlgorithm> for DeviceKeyAlgorithm {
+    fn from(inner: ruma::DeviceKeyAlgorithm) -> Self {
+        Self { inner }
+    }
+}
+
+// #[napi]
+impl DeviceKeyAlgorithm {
+    /// Read the device key algorithm's name. If the name is
+    /// `Unknown`, one may be interested by the `to_string` method to
+    /// read the original name.
+    // #[napi(getter)]
+    pub fn name(&self) -> DeviceKeyAlgorithmName {
+        self.inner.clone().into()
+    }
+
+    /// Return the device key algorithm as a string.
+    // #[napi]
+    #[allow(clippy::inherent_to_string)]
+    pub fn to_string(&self) -> String {
+        self.inner.to_string()
+    }
+}
+
+/// The basic key algorithm names in the specification.
+// #[napi]
+pub enum DeviceKeyAlgorithmName {
+    /// The Ed25519 signature algorithm.
+    Ed25519,
+
+    /// The Curve25519 ECDH algorithm.
+    Curve25519,
+
+    /// The Curve25519 ECDH algorithm, but the key also contains
+    /// signatures.
+    SignedCurve25519,
+
+    /// An unknown device key algorithm.
+    Unknown,
+}
+
+impl From<ruma::DeviceKeyAlgorithm> for DeviceKeyAlgorithmName {
+    fn from(value: ruma::DeviceKeyAlgorithm) -> Self {
+        use ruma::DeviceKeyAlgorithm::*;
+
+        match value {
+            Ed25519 => Self::Ed25519,
+            Curve25519 => Self::Curve25519,
+            SignedCurve25519 => Self::SignedCurve25519,
+            _ => Self::Unknown,
+        }
+    }
+} 
+
+
+
+
+
+
+
+
+
 /// A Matrix [room ID].
 ///
 /// [room ID]: https://spec.matrix.org/v1.2/appendices/#room-ids-and-event-ids
-// #[wasm_bindgen]
+// #[napi]
 #[derive(Debug, Clone)]
 pub struct RoomId {
     pub(crate) inner: ruma::OwnedRoomId,
@@ -116,13 +227,13 @@ impl From<ruma::OwnedRoomId> for RoomId {
 // #[wasm_bindgen]
 impl RoomId {
     /// Parse/validate and create a new `RoomId`.
-    // #[wasm_bindgen(constructor)]
+    // #[napi(constructor, strict)]
     pub fn new(id: &str) -> Result<RoomId> {
         Ok(Self::from(ruma::RoomId::parse(id)?))
     }
 
     /// Returns the user's localpart.
-    // #[wasm_bindgen(getter)]
+    // #[napi(getter)]
     pub fn localpart(&self) -> String {
         self.inner.localpart().to_owned()
     }
@@ -147,7 +258,7 @@ impl RoomId {
 /// present).
 ///
 /// [server name]: https://spec.matrix.org/v1.2/appendices/#server-name
-// #[wasm_bindgen]
+// #[napi]
 #[derive(Debug)]
 pub struct ServerName {
     inner: ruma::OwnedServerName,
@@ -156,7 +267,7 @@ pub struct ServerName {
 // #[wasm_bindgen]
 impl ServerName {
     /// Parse/validate and create a new `ServerName`.
-    // #[wasm_bindgen(constructor)]
+    // #[napi(constructor, strict)]
     pub fn new(name: &str) -> Result<ServerName> {
         Ok(Self { inner: ruma::ServerName::parse(name)? })
     }
@@ -165,7 +276,7 @@ impl ServerName {
     ///
     /// That is: Return the part of the server before `:<port>` or the
     /// full server name if there is no port.
-    // #[wasm_bindgen(getter)]
+    // #[napi(getter)]
     pub fn host(&self) -> String {
         self.inner.host().to_owned()
     }
