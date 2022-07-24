@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"static":[["DEFAULT_SYNC_ROOM_ID","The default room ID where sync events are added."],["DEFAULT_SYNC_SUMMARY",""],["INVITE_SYNC",""],["LEAVE_SYNC",""],["LEAVE_SYNC_EVENT",""],["MORE_SYNC",""],["MORE_SYNC_2",""],["SYNC",""],["VOIP_SYNC",""]]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Attachment","A type to encrypt and to decrypt anything that can fit in an `Uint8Array`, usually big buffer."],["EncryptedAttachment","An encrypted attachment, usually created from `Attachment.encrypt`."]]};
